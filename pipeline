@@ -1,0 +1,41 @@
+pipeline {
+    agent none
+    environment{
+        DOCKERHUB_CREDENTIALS=credentials('xxxxxxx-xxx-xxx-xxx-xxxxxxxxx')
+    }
+    stages {
+        stage('Hello') {
+            steps {
+                echo 'Hello World'
+            }
+        }
+        stage('git'){
+            agent {
+                label 'kmaster'
+            }
+            steps {
+                git 'https://github.com/kishanchand11/cloudprt.git'
+            }
+        }
+        stage('docker'){
+            agent{
+                label 'kmaster'
+            }
+            steps{
+                sh 'sudo docker build /home/ubuntu/workspace/testpipeline -t kishanchand/cloudprt'
+                sh 'sudo echo $DOCKERHUB_CREDENTIALS_PSW | sudo docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                sh 'sudo docker push kishanchand/cloudprt'
+                }
+            }
+        stage('k8s'){
+            agent{
+            label 'kmaster'
+        }
+        steps{
+            sh 'kubectl delete deploy nginx-deployment'
+            sh 'kubectl apply -f deployment.yaml'
+            sh 'kubectl apply -f service.yaml'
+        }
+        }
+    }
+}
